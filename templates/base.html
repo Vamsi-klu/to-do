@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" class="h-full bg-slate-950">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}To‑Do{% endblock %}</title>
+    <meta name="theme-color" content="#0ea5e9" />
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#ecfeff',
+                100: '#cffafe',
+                200: '#a5f3fc',
+                300: '#67e8f9',
+                400: '#22d3ee',
+                500: '#06b6d4',
+                600: '#0891b2',
+                700: '#0e7490',
+                800: '#155e75',
+                900: '#164e63',
+              },
+            },
+          }
+        }
+      }
+    </script>
+    <style>
+      .bg-grid {
+        background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0);
+        background-size: 24px 24px;
+      }
+      .glass {
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body class="h-full text-slate-100 selection:bg-brand-400/30 selection:text-white">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-brand-900 via-slate-950 to-slate-950"></div>
+    <div class="absolute inset-0 -z-10 bg-grid"></div>
+    {% block body %}{% endblock %}
+  </body>
+  {% block scripts %}{% endblock %}
+  </html>
+

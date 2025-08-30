@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}To‑Do{% endblock %}
+{% block body %}
+<header class="px-6 pt-6">
+  <div class="max-w-3xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="h-10 w-10 rounded-xl bg-brand-500/20 ring-1 ring-brand-400/30 grid place-items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-brand-300">
+          <path fill-rule="evenodd" d="M1.5 4.5a3 3 0 013-3h15a3 3 0 013 3v15a3 3 0 01-3 3h-15a3 3 0 01-3-3v-15zm5.47 7.97a.75.75 0 011.06 0L10.5 13.94l5.47-5.47a.75.75 0 011.06 1.06l-6 6a.75.75 0 01-1.06 0l-3-3a.75.75 0 010-1.06z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-semibold leading-tight">Your Tasks</h1>
+        <p class="text-sm text-slate-300">Signed in as <span class="text-white font-medium">{{ user.username }}</span></p>
+      </div>
+    </div>
+    <form action="{{ url_for('logout') }}" method="post">
+      <button class="rounded-xl bg-slate-800 hover:bg-slate-700 ring-1 ring-white/10 text-slate-200 px-4 py-2 text-sm transition">Log out</button>
+    </form>
+  </div>
+</header>
+
+<main class="px-6 py-6">
+  <div class="max-w-3xl mx-auto glass rounded-2xl shadow-xl ring-1 ring-white/10 p-6">
+    <div class="flex gap-3 items-center">
+      <div class="flex-1">
+        <label for="new-todo" class="sr-only">Add a task</label>
+        <input id="new-todo" class="w-full rounded-xl bg-slate-900/60 ring-1 ring-white/10 focus:ring-brand-400/50 outline-none px-4 py-3" placeholder="What needs to be done?" />
+      </div>
+      <button id="add-btn" class="shrink-0 rounded-xl bg-brand-500 hover:bg-brand-400 text-white font-medium px-4 py-3 transition">Add</button>
+    </div>
+
+    <div class="mt-6 flex items-center justify-between">
+      <div class="text-sm text-slate-300"><span id="left-count">0</span> items left</div>
+      <div class="flex gap-2 text-sm">
+        <button data-filter="all" class="filter-btn rounded-lg px-3 py-1 ring-1 ring-white/10 bg-slate-800 text-slate-200">All</button>
+        <button data-filter="active" class="filter-btn rounded-lg px-3 py-1 ring-1 ring-white/10 hover:bg-slate-800 text-slate-300">Active</button>
+        <button data-filter="completed" class="filter-btn rounded-lg px-3 py-1 ring-1 ring-white/10 hover:bg-slate-800 text-slate-300">Completed</button>
+      </div>
+      <button id="clear-completed" class="text-sm text-slate-300 hover:text-slate-200">Clear completed</button>
+    </div>
+
+    <ul id="list" class="mt-4 divide-y divide-white/5"></ul>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+{% endblock %}
+
