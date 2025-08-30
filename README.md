@@ -170,7 +170,7 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 👤 Author
 
-**Vamsi**
+**Ramachandra Nalam**
 - GitHub: [@Vamsi-klu](https://github.com/Vamsi-klu)
 
 ## 🙏 Acknowledgments
