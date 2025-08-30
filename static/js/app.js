@@ -5,26 +5,82 @@
   const leftCountEl = document.getElementById('left-count');
   const clearCompletedBtn = document.getElementById('clear-completed');
   const filterBtns = Array.from(document.querySelectorAll('.filter-btn'));
+  const themeToggle = document.getElementById('theme-toggle');
 
   let todos = [];
   let filter = 'all';
+  
+  // Initialize sound effects and celebrations
+  const soundEffects = new SoundEffects();
+  const celebrationEffects = new CelebrationEffects();
+  
+  // Theme management
+  function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+  }
+  
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    updateThemeToggleIcon(theme);
+  }
+  
+  function updateThemeToggleIcon(theme) {
+    const sunIcon = themeToggle.querySelector('.sun-icon');
+    const moonIcon = themeToggle.querySelector('.moon-icon');
+    
+    if (theme === 'light') {
+      sunIcon.style.display = 'none';
+      moonIcon.style.display = 'block';
+    } else {
+      sunIcon.style.display = 'block';
+      moonIcon.style.display = 'none';
+    }
+  }
+  
+  function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+  }
 
   function render() {
     const filtered = todos.filter(t => filter === 'all' ? true : filter === 'active' ? !t.completed : t.completed);
     listEl.innerHTML = '';
     for (const t of filtered) {
       const li = document.createElement('li');
-      li.className = 'group flex items-center gap-3 py-3';
+      li.className = 'task-item group flex items-center gap-3 py-3';
+      li.dataset.taskId = t.id;
 
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = t.completed;
       checkbox.className = 'h-5 w-5 rounded border-slate-600 text-brand-500 bg-slate-900';
       checkbox.addEventListener('change', async () => {
+        const wasCompleted = !checkbox.checked;
+        const isNowCompleted = checkbox.checked;
+        
+        // Add animation class
+        if (isNowCompleted) {
+          li.classList.add('task-completing');
+          await soundEffects.playCompleteSound();
+          
+          // Trigger celebration for completing a task
+          setTimeout(() => {
+            celebrationEffects.triggerFullCelebration();
+          }, 400);
+        }
+        
         const updated = await apiPatch(t.id, { completed: checkbox.checked });
         updateTodo(updated);
         updateCounts();
-        render();
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+          li.classList.remove('task-completing');
+          render();
+        }, 800);
       });
 
       const text = document.createElement('input');
@@ -45,10 +101,17 @@
       del.innerText = 'Delete';
       del.className = 'opacity-0 group-hover:opacity-100 transition text-sm text-slate-300 hover:text-red-300';
       del.addEventListener('click', async () => {
-        await apiDelete(t.id);
-        todos = todos.filter(x => x.id !== t.id);
-        updateCounts();
-        render();
+        // Add delete animation
+        li.classList.add('task-deleting');
+        await soundEffects.playDeleteSound();
+        
+        // Wait for animation to complete before removing from DOM
+        setTimeout(async () => {
+          await apiDelete(t.id);
+          todos = todos.filter(x => x.id !== t.id);
+          updateCounts();
+          render();
+        }, 400);
       });
 
       li.appendChild(checkbox);
@@ -104,11 +167,24 @@
   addBtn.addEventListener('click', async () => {
     const text = inputEl.value.trim();
     if (!text) return;
+    
+    await soundEffects.playCreateSound();
     const created = await apiCreate(text);
     todos.unshift(created);
     inputEl.value = '';
     updateCounts();
     render();
+    
+    // Add create animation to the new task
+    setTimeout(() => {
+      const newTaskEl = listEl.querySelector(`[data-task-id="${created.id}"]`);
+      if (newTaskEl) {
+        newTaskEl.classList.add('task-creating');
+        setTimeout(() => {
+          newTaskEl.classList.remove('task-creating');
+        }, 500);
+      }
+    }, 50);
   });
 
   inputEl.addEventListener('keydown', async (e) => {
@@ -119,9 +195,32 @@
 
   clearCompletedBtn.addEventListener('click', async () => {
     const done = todos.filter(t => t.completed);
-    for (const t of done) await apiDelete(t.id);
-    todos = todos.filter(t => !t.completed);
-    render();
+    if (done.length === 0) return;
+    
+    // Play celebration sound for clearing multiple completed tasks
+    if (done.length > 1) {
+      await soundEffects.playCelebrationSound();
+      celebrationEffects.triggerMultipleFireworks();
+    } else {
+      await soundEffects.playDeleteSound();
+    }
+    
+    // Animate all completed tasks being deleted
+    const completedElements = Array.from(listEl.querySelectorAll('.task-item')).filter(el => {
+      const taskId = el.dataset.taskId;
+      return done.some(task => task.id == taskId);
+    });
+    
+    completedElements.forEach(el => {
+      el.classList.add('task-deleting');
+    });
+    
+    // Wait for animations to complete
+    setTimeout(async () => {
+      for (const t of done) await apiDelete(t.id);
+      todos = todos.filter(t => !t.completed);
+      render();
+    }, 400);
   });
 
   filterBtns.forEach(btn => {
@@ -133,8 +232,12 @@
     })
   });
 
+  // Theme toggle event listener
+  themeToggle.addEventListener('click', toggleTheme);
+
   // initial load
   (async () => {
+    initTheme();
     todos = await apiList();
     render();
   })();

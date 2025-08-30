@@ -30,20 +30,206 @@
       }
     </script>
     <style>
+      :root {
+        --bg-primary: #020617;
+        --bg-secondary: #0f172a;
+        --bg-card: #1e293b;
+        --text-primary: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --text-muted: #64748b;
+        --border-color: rgba(255,255,255,0.1);
+        --brand-500: #06b6d4;
+        --brand-400: #22d3ee;
+        --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      }
+
+      [data-theme="light"] {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8fafc;
+        --bg-card: #f1f5f9;
+        --text-primary: #1e293b;
+        --text-secondary: #334155;
+        --text-muted: #64748b;
+        --border-color: rgba(0,0,0,0.1);
+        --brand-500: #0891b2;
+        --brand-400: #06b6d4;
+        --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6));
+      }
+
       .bg-grid {
-        background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0);
+        background-image: radial-gradient(circle at 1px 1px, var(--border-color) 1px, transparent 0);
         background-size: 24px 24px;
       }
       .glass {
-        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+        background: var(--glass-bg);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
+      }
+
+      /* Task Animations */
+      .task-item {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateX(0);
+        opacity: 1;
+      }
+
+      .task-item.task-creating {
+        animation: slideInFromRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .task-item.task-completing {
+        animation: taskComplete 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .task-item.task-deleting {
+        animation: slideOutLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      @keyframes slideInFromRight {
+        0% {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        100% {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOutLeft {
+        0% {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(-100%);
+          opacity: 0;
+        }
+      }
+
+      @keyframes taskComplete {
+        0% {
+          transform: scale(1);
+        }
+        25% {
+          transform: scale(1.05);
+        }
+        50% {
+          transform: scale(1) rotateY(5deg);
+        }
+        75% {
+          transform: scale(1) rotateY(-5deg);
+        }
+        100% {
+          transform: scale(1) rotateY(0deg);
+        }
+      }
+
+      /* Celebration Effect */
+      .celebration {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 1000;
+      }
+
+      .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: var(--brand-400);
+        animation: confettiFall 2s ease-out forwards;
+      }
+
+      .confetti:nth-child(odd) {
+        background: #fbbf24;
+        animation-delay: 0.1s;
+      }
+
+      .confetti:nth-child(3n) {
+        background: #f87171;
+        animation-delay: 0.2s;
+      }
+
+      .confetti:nth-child(4n) {
+        background: #a78bfa;
+        animation-delay: 0.15s;
+      }
+
+      @keyframes confettiFall {
+        0% {
+          transform: translateY(-100vh) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(100vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+
+      /* Theme Toggle Button */
+      .theme-toggle {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 100;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 1px solid var(--border-color);
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .theme-toggle:hover {
+        transform: scale(1.1);
+        border-color: var(--brand-400);
+      }
+
+      /* Update existing styles to use CSS variables */
+      body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+      }
+
+      .glass-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--border-color);
+      }
+
+      /* Background theme switching */
+      .dark-bg {
+        display: block;
+      }
+      .light-bg {
+        display: none;
+      }
+      
+      [data-theme="light"] .dark-bg {
+        display: none;
+      }
+      [data-theme="light"] .light-bg {
+        display: block;
+      }
+
+      /* Smooth theme transition */
+      * {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
       }
     </style>
     {% block head %}{% endblock %}
   </head>
-  <body class="h-full text-slate-100 selection:bg-brand-400/30 selection:text-white">
-    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-brand-900 via-slate-950 to-slate-950"></div>
+  <body class="h-full selection:bg-brand-400/30 selection:text-white">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-brand-900 via-slate-950 to-slate-950 dark-bg"></div>
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-slate-100 via-white to-slate-50 light-bg" style="display: none;"></div>
     <div class="absolute inset-0 -z-10 bg-grid"></div>
     {% block body %}{% endblock %}
   </body>
