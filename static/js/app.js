@@ -56,7 +56,7 @@
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = t.completed;
-      checkbox.className = 'h-5 w-5 rounded border-slate-600 text-brand-500 bg-slate-900';
+      checkbox.className = 'h-5 w-5 rounded themed-checkbox text-brand-500';
       checkbox.addEventListener('change', async () => {
         const wasCompleted = !checkbox.checked;
         const isNowCompleted = checkbox.checked;
@@ -85,7 +85,7 @@
 
       const text = document.createElement('input');
       text.value = t.text;
-      text.className = 'flex-1 bg-transparent outline-none px-2 py-1 rounded focus:ring-1 focus:ring-brand-400/50 ' + (t.completed ? 'line-through text-slate-400' : '');
+      text.className = 'flex-1 bg-transparent outline-none px-2 py-1 rounded focus:ring-1 focus:ring-brand-400/50 ' + (t.completed ? 'line-through themed-text-muted' : 'themed-text-primary');
       text.addEventListener('change', async () => {
         const val = text.value.trim();
         if (!val) {
@@ -99,7 +99,7 @@
 
       const del = document.createElement('button');
       del.innerText = 'Delete';
-      del.className = 'opacity-0 group-hover:opacity-100 transition text-sm text-slate-300 hover:text-red-300';
+      del.className = 'opacity-0 group-hover:opacity-100 transition text-sm themed-text-muted themed-delete';
       del.addEventListener('click', async () => {
         // Add delete animation
         li.classList.add('task-deleting');
@@ -225,8 +225,12 @@
 
   filterBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      filterBtns.forEach(b => b.classList.remove('bg-slate-800', 'text-slate-200'));
-      btn.classList.add('bg-slate-800', 'text-slate-200');
+      filterBtns.forEach(b => {
+        b.classList.remove('themed-button');
+        b.classList.add('themed-text-muted');
+      });
+      btn.classList.remove('themed-text-muted');
+      btn.classList.add('themed-button');
       filter = btn.dataset.filter;
       render();
     })
