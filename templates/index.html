@@ -50,6 +50,45 @@
 
     <ul id="list" class="mt-4 divide-y divide-white/5"></ul>
   </div>
+
+  <!-- AI Features Section -->
+  <div class="max-w-3xl mx-auto mt-6 glass rounded-2xl shadow-xl ring-1 ring-white/10 p-6">
+    <h2 class="text-xl font-semibold mb-4">AI Assistant</h2>
+
+    <div class="flex gap-3 mb-4">
+      <button id="ai-summary-btn" class="flex-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium px-4 py-3 transition">
+        Generate Summary
+      </button>
+      <button id="ai-suggestions-btn" class="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-3 transition">
+        Get Suggestions
+      </button>
+    </div>
+
+    <div id="ai-result" class="hidden">
+      <div class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 id="ai-result-title" class="text-sm font-medium text-slate-300"></h3>
+          <button id="ai-result-close" class="text-slate-400 hover:text-slate-200 text-sm">✕</button>
+        </div>
+        <div id="ai-result-content" class="text-sm text-slate-200 whitespace-pre-wrap"></div>
+      </div>
+    </div>
+
+    <div id="ai-loading" class="hidden">
+      <div class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-4 text-center">
+        <div class="text-sm text-slate-300">
+          <span class="inline-block animate-spin mr-2">⏳</span>
+          Processing...
+        </div>
+      </div>
+    </div>
+
+    <div id="ai-error" class="hidden">
+      <div class="rounded-xl bg-red-900/30 ring-1 ring-red-500/30 p-4">
+        <div class="text-sm text-red-200" id="ai-error-content"></div>
+      </div>
+    </div>
+  </div>
 </main>
 {% endblock %}
 

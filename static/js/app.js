@@ -6,6 +6,15 @@
   const clearCompletedBtn = document.getElementById('clear-completed');
   const filterBtns = Array.from(document.querySelectorAll('.filter-btn'));
   const themeToggle = document.getElementById('theme-toggle');
+  const aiSummaryBtn = document.getElementById('ai-summary-btn');
+  const aiSuggestionsBtn = document.getElementById('ai-suggestions-btn');
+  const aiResult = document.getElementById('ai-result');
+  const aiResultTitle = document.getElementById('ai-result-title');
+  const aiResultContent = document.getElementById('ai-result-content');
+  const aiResultClose = document.getElementById('ai-result-close');
+  const aiLoading = document.getElementById('ai-loading');
+  const aiError = document.getElementById('ai-error');
+  const aiErrorContent = document.getElementById('ai-error-content');
 
   let todos = [];
   let filter = 'all';
@@ -234,6 +243,79 @@
 
   // Theme toggle event listener
   themeToggle.addEventListener('click', toggleTheme);
+
+  // AI Features
+  function showAIResult(title, content) {
+    aiLoading.classList.add('hidden');
+    aiError.classList.add('hidden');
+    aiResult.classList.remove('hidden');
+    aiResultTitle.textContent = title;
+    aiResultContent.textContent = content;
+  }
+
+  function showAILoading() {
+    aiResult.classList.add('hidden');
+    aiError.classList.add('hidden');
+    aiLoading.classList.remove('hidden');
+  }
+
+  function showAIError(message) {
+    aiResult.classList.add('hidden');
+    aiLoading.classList.add('hidden');
+    aiError.classList.remove('hidden');
+    aiErrorContent.textContent = message;
+  }
+
+  function hideAllAIMessages() {
+    aiResult.classList.add('hidden');
+    aiLoading.classList.add('hidden');
+    aiError.classList.add('hidden');
+  }
+
+  async function generateSummary() {
+    try {
+      showAILoading();
+      const res = await fetch('/api/ai/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to generate summary');
+      }
+
+      const data = await res.json();
+      showAIResult('Task Summary', data.summary);
+    } catch (error) {
+      showAIError(error.message || 'Failed to generate summary. Please try again.');
+    }
+  }
+
+  async function generateSuggestions() {
+    try {
+      showAILoading();
+      const res = await fetch('/api/ai/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to generate suggestions');
+      }
+
+      const data = await res.json();
+      showAIResult('AI Suggestions', data.suggestions);
+    } catch (error) {
+      showAIError(error.message || 'Failed to generate suggestions. Please try again.');
+    }
+  }
+
+  // AI button event listeners
+  aiSummaryBtn.addEventListener('click', generateSummary);
+  aiSuggestionsBtn.addEventListener('click', generateSuggestions);
+  aiResultClose.addEventListener('click', hideAllAIMessages);
 
   // initial load
   (async () => {

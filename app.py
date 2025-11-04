@@ -14,6 +14,7 @@ from flask import (
     session,
     url_for,
 )
+from openai import OpenAI
 
 from database import db, init_db
 from models import User, Todo
@@ -159,6 +160,115 @@ def register_routes(app: Flask) -> None:
         db.session.delete(todo)
         db.session.commit()
         return ("", 204)
+
+    # ---- AI endpoints ----
+    @app.post("/api/ai/summary")
+    @login_required
+    def api_ai_summary():
+        user = get_current_user()
+        todos = (
+            Todo.query.filter_by(user_id=user.id)
+            .order_by(Todo.created_at.desc())
+            .all()
+        )
+
+        if not todos:
+            return jsonify({"summary": "You don't have any tasks yet. Start by adding some tasks to get organized!"}), 200
+
+        # Get OpenAI API key from environment
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return jsonify({"error": "OpenAI API key not configured. Please set the OPENAI_API_KEY environment variable."}), 500
+
+        try:
+            client = OpenAI(api_key=api_key)
+
+            # Format tasks for the AI
+            completed_tasks = [t for t in todos if t.completed]
+            active_tasks = [t for t in todos if not t.completed]
+
+            task_text = f"""You have {len(todos)} total tasks:
+- {len(completed_tasks)} completed tasks
+- {len(active_tasks)} active tasks
+
+Active tasks:
+"""
+            for t in active_tasks[:10]:  # Limit to 10 tasks
+                task_text += f"- {t.text}\n"
+
+            if len(active_tasks) > 10:
+                task_text += f"... and {len(active_tasks) - 10} more\n"
+
+            task_text += "\nCompleted tasks:\n"
+            for t in completed_tasks[:5]:  # Limit to 5 completed
+                task_text += f"- {t.text}\n"
+
+            if len(completed_tasks) > 5:
+                task_text += f"... and {len(completed_tasks) - 5} more\n"
+
+            # Call OpenAI API
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that summarizes task lists. Provide a brief, encouraging summary of the user's tasks, highlighting what they've accomplished and what's next."},
+                    {"role": "user", "content": f"Please summarize my tasks:\n\n{task_text}"}
+                ],
+                max_tokens=200,
+                temperature=0.7
+            )
+
+            summary = response.choices[0].message.content.strip()
+            return jsonify({"summary": summary}), 200
+
+        except Exception as e:
+            return jsonify({"error": f"Failed to generate summary: {str(e)}"}), 500
+
+    @app.post("/api/ai/suggestions")
+    @login_required
+    def api_ai_suggestions():
+        user = get_current_user()
+        todos = (
+            Todo.query.filter_by(user_id=user.id)
+            .order_by(Todo.created_at.desc())
+            .all()
+        )
+
+        # Get OpenAI API key from environment
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return jsonify({"error": "OpenAI API key not configured. Please set the OPENAI_API_KEY environment variable."}), 500
+
+        try:
+            client = OpenAI(api_key=api_key)
+
+            # Format tasks for the AI
+            if todos:
+                task_text = "Based on these existing tasks:\n"
+                for t in todos[:15]:  # Limit to 15 tasks
+                    status = "✓" if t.completed else "○"
+                    task_text += f"{status} {t.text}\n"
+
+                if len(todos) > 15:
+                    task_text += f"... and {len(todos) - 15} more\n"
+            else:
+                task_text = "The user has no tasks yet.\n"
+
+            # Call OpenAI API
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that suggests new tasks based on existing ones. Provide 3-5 relevant, actionable task suggestions. Keep them concise and practical."},
+                    {"role": "user", "content": f"{task_text}\n\nPlease suggest some relevant new tasks I could add to my list."}
+                ],
+                max_tokens=250,
+                temperature=0.8
+            )
+
+            suggestions = response.choices[0].message.content.strip()
+            return jsonify({"suggestions": suggestions}), 200
+
+        except Exception as e:
+            return jsonify({"error": f"Failed to generate suggestions: {str(e)}"}), 500
 
 
 def serialize_todo(todo: Todo) -> dict[str, Any]:

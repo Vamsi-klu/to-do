@@ -12,10 +12,15 @@ A beautiful and simple to-do application built with Flask, SQLite, and Tailwind 
 - 🔐 **User Authentication**: Secure login and registration system
 - ✅ **Task Management**: Create, read, update, and delete tasks
 - 👤 **User-specific Tasks**: Each user has their own private task list
+- 🤖 **AI Summary**: Generate intelligent summaries of your tasks using OpenAI
+- 💡 **AI Suggestions**: Get smart task suggestions based on your existing tasks
 - 🎨 **Beautiful UI**: Modern design with Tailwind CSS
 - 📱 **Responsive**: Works seamlessly on desktop and mobile
 - 🔒 **Secure**: Passwords are hashed using Werkzeug security
 - ⚡ **Fast**: Lightweight SQLite database with SQLAlchemy ORM
+- 🎵 **Sound Effects**: Engaging audio feedback for task actions
+- 🎉 **Celebration Effects**: Visual celebrations when completing tasks
+- 🌓 **Dark/Light Theme**: Toggle between dark and light modes
 
 ## 🚀 Quick Start
 
@@ -43,18 +48,26 @@ A beautiful and simple to-do application built with Flask, SQLite, and Tailwind 
    pip install -r requirements.txt
    ```
 
-4. **Initialize the database and create a user**
+4. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your OpenAI API key
+   ```
+   Get your OpenAI API key from [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+
+5. **Initialize the database and create a user**
    ```bash
    python bootstrap.py
    ```
    This will create the database tables and prompt you to create an initial user account.
 
-5. **Run the application**
+6. **Run the application**
    ```bash
+   export OPENAI_API_KEY="your-api-key-here"  # On Windows: set OPENAI_API_KEY=your-api-key-here
    flask --app app run --debug
    ```
 
-6. **Open your browser**
+7. **Open your browser**
    Navigate to [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
 ## 📁 Project Structure
@@ -83,6 +96,7 @@ to-do/
 
 - **Backend**: Flask 3.0.3 - Python web framework
 - **Database**: SQLite with SQLAlchemy ORM
+- **AI**: OpenAI GPT-3.5 Turbo for intelligent summaries and suggestions
 - **Frontend**: HTML5, Tailwind CSS (via CDN), Vanilla JavaScript
 - **Authentication**: Session-based with hashed passwords
 - **Development**: Flask development server with debug mode
@@ -97,9 +111,12 @@ to-do/
 | GET | `/register` | Registration page |
 | POST | `/register` | Process registration form |
 | POST | `/logout` | Logout user |
-| POST | `/todos` | Create new todo |
-| PUT | `/todos/<id>` | Update todo |
-| DELETE | `/todos/<id>` | Delete todo |
+| GET | `/api/todos` | List all todos |
+| POST | `/api/todos` | Create new todo |
+| PATCH | `/api/todos/<id>` | Update todo |
+| DELETE | `/api/todos/<id>` | Delete todo |
+| POST | `/api/ai/summary` | Generate AI summary of tasks |
+| POST | `/api/ai/suggestions` | Get AI task suggestions |
 
 ## 🔧 Configuration
 
@@ -107,6 +124,7 @@ The application uses the following configuration options:
 
 - `SECRET_KEY`: Session encryption key (auto-generated if not set)
 - `DATABASE_URL`: Database connection string (defaults to SQLite)
+- `OPENAI_API_KEY`: OpenAI API key for AI features (required for summary and suggestions)
 - `SQLALCHEMY_TRACK_MODIFICATIONS`: Disabled for performance
 
 You can set these as environment variables:
@@ -114,7 +132,10 @@ You can set these as environment variables:
 ```bash
 export SECRET_KEY="your-secret-key-here"
 export DATABASE_URL="sqlite:///your-database.db"
+export OPENAI_API_KEY="your-openai-api-key-here"
 ```
+
+Or create a `.env` file based on `.env.example` and load it with a library like `python-dotenv`.
 
 ## 🧪 Development
 
@@ -141,12 +162,16 @@ python bootstrap.py     # Recreate and initialize
 
 1. **Register**: Create a new account with username and password
 2. **Login**: Sign in with your credentials
-3. **Add Tasks**: Click "Add new todo" to create tasks
-4. **Manage Tasks**: 
+3. **Add Tasks**: Enter a task description and click "Add"
+4. **Manage Tasks**:
    - ✅ Mark tasks as complete/incomplete
-   - ✏️ Edit task descriptions
+   - ✏️ Edit task descriptions by clicking on them
    - 🗑️ Delete tasks you no longer need
-5. **Logout**: Securely end your session
+5. **AI Features** (requires OpenAI API key):
+   - 🤖 **Generate Summary**: Click to get an AI-generated summary of your tasks
+   - 💡 **Get Suggestions**: Click to receive intelligent task suggestions
+6. **Theme Toggle**: Switch between dark and light themes
+7. **Logout**: Securely end your session
 
 ## 🔒 Security Features
 
