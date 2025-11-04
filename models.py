@@ -26,6 +26,8 @@ class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
     text = db.Column(db.String(255), nullable=False)
+    notes = db.Column(db.Text, nullable=True)  # Detailed notes/description
+    progress = db.Column(db.Integer, default=0, nullable=False)  # Progress percentage 0-100
     completed = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

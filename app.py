@@ -17,6 +17,8 @@ from flask import (
 
 from database import db, init_db
 from models import User, Todo
+from datetime import datetime, timedelta
+import re
 
 
 def create_app() -> Flask:
@@ -126,7 +128,9 @@ def register_routes(app: Flask) -> None:
         text = (payload.get("text") or "").strip()
         if not text:
             return jsonify({"error": "Text is required"}), 400
-        todo = Todo(user_id=user.id, text=text, completed=False)
+        notes = (payload.get("notes") or "").strip()
+        progress = payload.get("progress", 0)
+        todo = Todo(user_id=user.id, text=text, notes=notes, progress=progress, completed=False)
         db.session.add(todo)
         db.session.commit()
         return jsonify(serialize_todo(todo)), 201
@@ -144,8 +148,16 @@ def register_routes(app: Flask) -> None:
             if not text:
                 return jsonify({"error": "Text is required"}), 400
             todo.text = text
+        if "notes" in payload:
+            todo.notes = (payload.get("notes") or "").strip()
+        if "progress" in payload:
+            progress = int(payload.get("progress", 0))
+            todo.progress = max(0, min(100, progress))  # Clamp between 0-100
         if "completed" in payload:
             todo.completed = bool(payload["completed"])
+            # Auto-set progress to 100 when completed
+            if todo.completed and todo.progress < 100:
+                todo.progress = 100
         db.session.commit()
         return jsonify(serialize_todo(todo))
 
@@ -160,14 +172,219 @@ def register_routes(app: Flask) -> None:
         db.session.commit()
         return ("", 204)
 
+    @app.get("/api/todos/<int:todo_id>/ai-summary")
+    @login_required
+    def api_todo_ai_summary(todo_id: int):
+        user = get_current_user()
+        todo = Todo.query.filter_by(id=todo_id, user_id=user.id).first()
+        if not todo:
+            abort(404)
+
+        summary = generate_ai_summary(todo, user)
+        return jsonify(summary)
+
 
 def serialize_todo(todo: Todo) -> dict[str, Any]:
     return {
         "id": todo.id,
         "text": todo.text,
+        "notes": todo.notes,
+        "progress": todo.progress,
         "completed": todo.completed,
         "created_at": todo.created_at.isoformat(),
         "updated_at": todo.updated_at.isoformat() if todo.updated_at else None,
+    }
+
+
+def generate_ai_summary(todo: Todo, user: User) -> dict[str, Any]:
+    """Generate AI-powered summary and suggestions for a task."""
+
+    # Calculate time-based insights
+    now = datetime.utcnow()
+    created_days = (now - todo.created_at).days
+    if todo.updated_at:
+        updated_hours = (now - todo.updated_at).total_seconds() / 3600
+    else:
+        updated_hours = (now - todo.created_at).total_seconds() / 3600
+
+    # Analyze task text for keywords and patterns
+    text_lower = todo.text.lower()
+    notes_lower = (todo.notes or "").lower()
+    combined_text = f"{text_lower} {notes_lower}"
+
+    # Generate smart summary
+    summary_parts = []
+
+    # Status summary
+    if todo.completed:
+        summary_parts.append(f"✅ Task completed! Great job on finishing this task.")
+    elif todo.progress >= 75:
+        summary_parts.append(f"🚀 Almost there! You're {todo.progress}% done with this task.")
+    elif todo.progress >= 50:
+        summary_parts.append(f"💪 You're halfway through! Keep up the momentum.")
+    elif todo.progress >= 25:
+        summary_parts.append(f"📈 Making progress! You've completed {todo.progress}% so far.")
+    elif todo.progress > 0:
+        summary_parts.append(f"🎯 Just getting started. You're at {todo.progress}% progress.")
+    else:
+        summary_parts.append("📋 This task is ready to begin.")
+
+    # Time-based insights
+    if created_days == 0:
+        summary_parts.append("Created today.")
+    elif created_days == 1:
+        summary_parts.append("Created yesterday.")
+    elif created_days <= 7:
+        summary_parts.append(f"Created {created_days} days ago.")
+    elif created_days <= 30:
+        weeks = created_days // 7
+        summary_parts.append(f"Created {weeks} week{'s' if weeks > 1 else ''} ago.")
+    else:
+        months = created_days // 30
+        summary_parts.append(f"Created {months} month{'s' if months > 1 else ''} ago.")
+
+    if updated_hours < 1:
+        summary_parts.append("Recently updated.")
+    elif updated_hours < 24:
+        summary_parts.append(f"Last updated {int(updated_hours)} hour{'s' if updated_hours > 1 else ''} ago.")
+    elif updated_hours < 168:
+        days = int(updated_hours / 24)
+        summary_parts.append(f"Last updated {days} day{'s' if days > 1 else ''} ago.")
+
+    # Generate AI suggestions based on task content
+    suggestions = []
+
+    # Priority-based suggestions
+    if any(word in combined_text for word in ["urgent", "asap", "important", "critical", "priority"]):
+        suggestions.append({
+            "icon": "🔥",
+            "type": "priority",
+            "text": "This task appears to be high priority. Consider working on it soon."
+        })
+
+    # Meeting/call suggestions
+    if any(word in combined_text for word in ["meeting", "call", "zoom", "teams", "conference"]):
+        suggestions.append({
+            "icon": "📞",
+            "type": "meeting",
+            "text": "Schedule this meeting in your calendar and send invites to participants."
+        })
+
+    # Email suggestions
+    if any(word in combined_text for word in ["email", "send", "reply", "respond"]):
+        suggestions.append({
+            "icon": "📧",
+            "type": "email",
+            "text": "Draft this email in advance to save time when you're ready to send."
+        })
+
+    # Research/learning suggestions
+    if any(word in combined_text for word in ["research", "learn", "study", "read", "course"]):
+        suggestions.append({
+            "icon": "📚",
+            "type": "learning",
+            "text": "Break this learning task into smaller chunks for better retention."
+        })
+
+    # Shopping/buying suggestions
+    if any(word in combined_text for word in ["buy", "purchase", "shop", "order", "groceries"]):
+        suggestions.append({
+            "icon": "🛒",
+            "type": "shopping",
+            "text": "Make a list of items to avoid forgetting anything important."
+        })
+
+    # Planning suggestions
+    if any(word in combined_text for word in ["plan", "organize", "prepare", "schedule"]):
+        suggestions.append({
+            "icon": "📅",
+            "type": "planning",
+            "text": "Create a timeline with specific milestones for better organization."
+        })
+
+    # Writing suggestions
+    if any(word in combined_text for word in ["write", "document", "report", "article", "blog"]):
+        suggestions.append({
+            "icon": "✍️",
+            "type": "writing",
+            "text": "Start with an outline to structure your thoughts before writing."
+        })
+
+    # Review suggestions
+    if any(word in combined_text for word in ["review", "check", "verify", "test", "qa"]):
+        suggestions.append({
+            "icon": "🔍",
+            "type": "review",
+            "text": "Create a checklist to ensure thorough review of all aspects."
+        })
+
+    # Long-running task suggestions
+    if created_days > 7 and not todo.completed and todo.progress < 50:
+        suggestions.append({
+            "icon": "⏰",
+            "type": "reminder",
+            "text": "This task has been pending for a while. Consider breaking it into smaller sub-tasks."
+        })
+
+    # Near completion suggestions
+    if todo.progress >= 80 and not todo.completed:
+        suggestions.append({
+            "icon": "🏁",
+            "type": "completion",
+            "text": "You're almost done! Schedule time to finish this task soon."
+        })
+
+    # Stale task suggestions
+    if updated_hours > 168 and not todo.completed:  # Not updated in a week
+        suggestions.append({
+            "icon": "💤",
+            "type": "stale",
+            "text": "This task hasn't been updated recently. Is it still relevant?"
+        })
+
+    # General productivity suggestions
+    if not suggestions:
+        suggestions.append({
+            "icon": "💡",
+            "type": "general",
+            "text": "Break this task into smaller steps to make progress easier to track."
+        })
+        suggestions.append({
+            "icon": "🎯",
+            "type": "general",
+            "text": "Set a specific deadline to create accountability and urgency."
+        })
+
+    # Generate insights
+    insights = []
+
+    # Progress insights
+    if todo.progress > 0 and not todo.completed:
+        days_since_update = updated_hours / 24
+        if days_since_update > 0:
+            velocity = todo.progress / max(1, created_days)
+            if velocity > 0:
+                days_to_complete = (100 - todo.progress) / velocity
+                if days_to_complete < 7:
+                    insights.append(f"At your current pace, you could complete this in about {int(days_to_complete)} days.")
+
+    # Consistency insights
+    if created_days > 0 and not todo.completed:
+        if updated_hours < 24:
+            insights.append("You're actively working on this task. Great consistency!")
+        elif updated_hours > 72:
+            insights.append("Consider dedicating some time to this task to maintain momentum.")
+
+    return {
+        "summary": " ".join(summary_parts),
+        "suggestions": suggestions[:4],  # Limit to top 4 suggestions
+        "insights": insights,
+        "stats": {
+            "days_since_created": created_days,
+            "hours_since_updated": round(updated_hours, 1),
+            "progress_percentage": todo.progress,
+            "is_completed": todo.completed,
+        }
     }
 
 
