@@ -16,6 +16,13 @@ from flask import (
 )
 from openai import OpenAI
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not installed, environment variables must be set manually
+
 from database import db, init_db
 from models import User, Todo
 
