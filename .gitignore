@@ -156,3 +156,8 @@ Thumbs.db
 
 # Claude Code
 .claude/
+
+# Test coverage
+htmlcov/
+coverage.json
+.coverage
