@@ -1,0 +1,35 @@
+[run]
+source = .
+omit =
+    */tests/*
+    */venv/*
+    */env/*
+    */.venv/*
+    */site-packages/*
+    bootstrap.py
+    */static/*
+    */templates/*
+    */__pycache__/*
+    */migrations/*
+branch = True
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    @property
+
+[html]
+directory = htmlcov
+
+[json]
+output = coverage.json
